@@ -3,6 +3,8 @@ services:
     build: ./backend
     container_name: django_app
     command: python manage.py runserver 0.0.0.0:8000
+    env_file:
+      - ./backend/.env 
     volumes:
       - ./backend:/app
     ports:
@@ -16,10 +18,8 @@ services:
   db:
     image: postgres:15
     container_name: postgres_db
-    environment:
-      POSTGRES_USER: django
-      POSTGRES_PASSWORD: djangopass
-      POSTGRES_DB: django_db
+    env_file:
+      - ./backend/.env 
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
