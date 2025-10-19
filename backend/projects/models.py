@@ -32,6 +32,9 @@ class Project(models.Model):
 
     # Calculated the progress of the project
     def calculate_progress(self):
+        # if the project hasn't been saved yet we skip
+        if not self.pk:
+            return 0
         milestones = self.milestones.all()
         if not milestones:
             return 0
