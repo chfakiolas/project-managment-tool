@@ -131,6 +131,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 INSTALLED_APPS += [
     'rest_framework',
     'corsheaders',
+    'projects'
 ]
 
 MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
