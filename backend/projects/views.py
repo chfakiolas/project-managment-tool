@@ -1,17 +1,24 @@
 # from django.shortcuts import render
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db import transaction
 from django.utils import timezone
 from .models import Project, Milestone
 from .serializers import ProjectSerializer, MilestoneSerializer
-
+from django_filters.rest_framework import DjangoFilterBackend
 
 # this handles all CRUD operations for project and also soft delete, restore, and bulk update.
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.filter(deleted=False).order_by('-last_updated')
     serializer_class = ProjectSerializer
+    
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    # search fields 
+    search_fields = ['title', 'description']
+    # filter fields
+    filterset_fields = ['status', 'owner', 'health']
+
 
     # we override delete to softdelete 
     def destroy(self, request, *args, **kwargs):
