@@ -195,3 +195,95 @@ class MilestoneViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save()
+
+    # Get milestones for a specific project
+    @action(detail=False, methods=['get'])
+    def by_project(self, request):
+        """
+        Get all milestones for a specific project
+        """
+        project_id = request.query_params.get('project_id')
+        if not project_id:
+            return Response({"error": "project_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            milestones = Milestone.objects.filter(project_id=project_id).order_by('due_date')
+            serializer = self.get_serializer(milestones, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Get overdue milestones
+    @action(detail=False, methods=['get'])
+    def overdue(self, request):
+        """
+        Get all overdue milestones
+        """
+        from django.utils import timezone
+        today = timezone.now().date()
+        overdue_milestones = Milestone.objects.filter(
+            due_date__lt=today,
+            completed=False
+        ).order_by('due_date')
+        
+        serializer = self.get_serializer(overdue_milestones, many=True)
+        return Response(serializer.data)
+
+    # Get milestones due soon
+    @action(detail=False, methods=['get'])
+    def due_soon(self, request):
+        """
+        Get milestones due within the next 7 days
+        """
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        today = timezone.now().date()
+        due_soon_date = today + timedelta(days=7)
+        
+        due_soon_milestones = Milestone.objects.filter(
+            due_date__lte=due_soon_date,
+            due_date__gte=today,
+            completed=False
+        ).order_by('due_date')
+        
+        serializer = self.get_serializer(due_soon_milestones, many=True)
+        return Response(serializer.data)
+
+    # Bulk update milestone status
+    @action(detail=False, methods=['post'])
+    def bulk_update_status(self, request):
+        """
+        Bulk update milestone completion status
+        """
+        milestone_ids = request.data.get('milestone_ids', [])
+        completed = request.data.get('completed', False)
+        
+        if not milestone_ids:
+            return Response({"error": "milestone_ids is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            with transaction.atomic():
+                updated = Milestone.objects.filter(id__in=milestone_ids).update(
+                    completed=completed,
+                    completed_date=timezone.now().date() if completed else None
+                )
+                
+                # Update project progress and health for affected projects
+                affected_projects = set()
+                for milestone in Milestone.objects.filter(id__in=milestone_ids):
+                    if milestone.project:
+                        affected_projects.add(milestone.project)
+                
+                for project in affected_projects:
+                    project.progress = project.calculate_progress()
+                    project.health = project.calculate_health()
+                    project.save(update_fields=['progress', 'health'])
+                
+                return Response({
+                    "updated": updated,
+                    "completed": completed,
+                    "affected_projects": len(affected_projects)
+                })
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

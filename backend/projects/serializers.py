@@ -1,11 +1,36 @@
 from rest_framework import serializers
 from .models import Project, Milestone
 
-# Handles simple CRUD for milestones
+# Handles CRUD for milestones with enhanced fields
 class MilestoneSerializer(serializers.ModelSerializer):
+    assigned_to_name = serializers.CharField(source='assigned_to.username', read_only=True)
+    is_overdue = serializers.SerializerMethodField()
+    is_due_soon = serializers.SerializerMethodField()
+    
     class Meta:
         model = Milestone
-        fields = ['id', 'name', 'completed', 'due_date']
+        fields = [
+            'id', 
+            'name', 
+            'description',
+            'completed', 
+            'due_date',
+            'completed_date',
+            'priority',
+            'assigned_to',
+            'assigned_to_name',
+            'created_at',
+            'updated_at',
+            'is_overdue',
+            'is_due_soon'
+        ]
+        read_only_fields = ['completed_date', 'created_at', 'updated_at']
+    
+    def get_is_overdue(self, obj):
+        return obj.is_overdue()
+    
+    def get_is_due_soon(self, obj):
+        return obj.is_due_soon()
    
 # Handles CRUD for projects and includes milestones inline     
 class ProjectSerializer(serializers.ModelSerializer):
