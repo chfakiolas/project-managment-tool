@@ -19,6 +19,7 @@ class MilestoneSerializer(serializers.ModelSerializer):
             'priority',
             'assigned_to',
             'assigned_to_name',
+            'project',
             'created_at',
             'updated_at',
             'is_overdue',

@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from django.db import transaction
 from django.utils import timezone
 from django.db.models import Q
+from django.contrib.auth.models import User
 from .models import Project, Milestone
 from .serializers import ProjectSerializer, MilestoneSerializer
 from django_filters.rest_framework import DjangoFilterBackend
@@ -194,6 +195,7 @@ class MilestoneViewSet(viewsets.ModelViewSet):
     serializer_class = MilestoneSerializer
 
     def perform_create(self, serializer):
+        print(f"Creating milestone with data: {serializer.validated_data}")
         serializer.save()
 
     # Get milestones for a specific project
@@ -287,3 +289,18 @@ class MilestoneViewSet(viewsets.ModelViewSet):
                 })
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Simple view to get users for milestone assignment
+from rest_framework.decorators import api_view
+
+@api_view(['GET'])
+def get_users(request):
+    """
+    Get list of users for milestone assignment
+    """
+    try:
+        users = User.objects.all().values('id', 'username', 'first_name', 'last_name')
+        return Response(list(users))
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
