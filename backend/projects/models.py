@@ -21,6 +21,7 @@ class Project(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='projects')
+    team_roster = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='team_projects', blank=True)
 
     progress = models.PositiveIntegerField(default=0)
     health = models.CharField(max_length=10, choices=HEALTH_CHOICES, default='good')

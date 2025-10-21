@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.contrib.auth.models import User
 from .models import Project, Milestone
 
 # Handles CRUD for milestones with enhanced fields
@@ -38,6 +39,11 @@ class ProjectSerializer(serializers.ModelSerializer):
     # We nest the milestones inside the project responses
     milestones = MilestoneSerializer(many=True, read_only=True)
     owner_name = serializers.CharField(source='owner.username', read_only=True)
+    team_roster = serializers.PrimaryKeyRelatedField(
+        many=True, 
+        queryset=User.objects.all(),
+        required=False
+    )
 
     class Meta:
         model = Project
@@ -47,6 +53,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             'description',
             'owner',
             'owner_name',
+            'team_roster',
             'progress',
             'health',
             'status',
