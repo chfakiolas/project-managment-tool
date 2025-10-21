@@ -40,6 +40,13 @@ class ProjectViewSet(viewsets.ModelViewSet):
         project.save()
         return Response({"status": "project recovered"})
 
+    # permanently delete a project
+    @action(detail=True, methods=['delete'])
+    def permanent_delete(self, request, pk=None):
+        project = Project.objects.get(pk=pk)
+        project.delete()  # This will permanently delete the project
+        return Response({"status": "project permanently deleted"})
+
     # bulk update action
     @action(detail=False, methods=['post'])
     def bulk_update_status(self, request):
@@ -58,6 +65,14 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
         return Response({"updated": updated, "status": status_value})
 
+    # Get deleted projects
+    @action(detail=False, methods=['get'])
+    def deleted_projects(self, request):
+        """
+        Retrieve all soft-deleted projects with pagination
+        """
+        # Get deleted projects
+        queryset = Project.objects.filter(deleted=True).order_by('-last_updated')
         
         # Apply search if provided
         search_query = request.query_params.get('search', '')
