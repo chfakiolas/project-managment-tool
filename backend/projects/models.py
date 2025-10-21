@@ -13,6 +13,7 @@ class Project(models.Model):
         ('active', 'Active'),
         ('on_hold', 'On Hold'),
         ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
     ]
 
     title = models.CharField(max_length=255)
