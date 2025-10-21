@@ -66,6 +66,54 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
         return Response({"updated": updated, "status": status_value})
 
+    # Enhanced bulk update action for status and tags
+    @action(detail=False, methods=['post'])
+    def bulk_update(self, request):
+        """
+        Bulk update multiple projects with status and/or tags
+        Expects JSON:
+        { 
+            "ids": [1,2,3],
+            "status": "on_hold",  // optional
+            "tags": ["Frontend", "High Priority"]  // optional, will be added to existing tags
+        }
+        """
+        ids = request.data.get('ids', [])
+        status_value = request.data.get('status')
+        tags = request.data.get('tags', [])
+
+        if not ids:
+            return Response({"error": "No project IDs provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        updated_count = 0
+        
+        try:
+            with transaction.atomic():
+                projects = Project.objects.filter(id__in=ids, deleted=False)
+                
+                for project in projects:
+                    # Update status if provided
+                    if status_value:
+                        project.status = status_value
+                    
+                    # Add tags if provided (merge with existing tags)
+                    if tags:
+                        existing_tags = project.tags if project.tags else []
+                        # Merge tags and remove duplicates
+                        project.tags = list(set(existing_tags + tags))
+                    
+                    project.last_updated = timezone.now()
+                    project.save()
+                    updated_count += 1
+
+                return Response({
+                    "updated": updated_count,
+                    "status": status_value,
+                    "tags_added": tags
+                })
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
     # Get deleted projects
     @action(detail=False, methods=['get'])
     def deleted_projects(self, request):
